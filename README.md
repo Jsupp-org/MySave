@@ -10,7 +10,7 @@
 MySAVE is a personal savings tracking system developed as a desktop GUI application. It allows users to encode and specifically separate their savings into different folders such as Emergency, Investment, or other personal goal. The system keeps track of the current balance and goal amount for each folder. It also records savings transactions in an SQLite database.
 
 **Problem or Need Addressed** 
-Managing savings manually like writing or putting it into the 'note' application on phones can make it difficult to keep track of different financial goals and current balances. MySAVE provides a simple way to organize savings and monitor progress in one application. This helps people to track their saving funds and keeps them motivated when seeing their progress over time.
+Managing savings manually like writing or putting it into the 'note' application on phones can make it difficult to keep track of different financial goals and current balances. Another problem with the traditional way of noting your savings on a sheet of paper is that papers are very vulnerable (very easy to tear apart or to be crumpled / can be thrown anytime without being noticed). Additionally, this project is already a feature of a e-wallet app, however, the problem about this is e-wallet is accessible anytime and anywhere (if you have an internet), which put your savings into danger if for instance, you need money on that time. MySAVE provides a simple way to organize savings and monitor progress in one application. This helps people to track their saving funds and keeps them motivated when seeing their progress over time.
 
 
 
