@@ -281,108 +281,83 @@ The project does not use a large custom inheritance hierarchy requiring explicit
 
 **Database Structure**
 
-The system uses an SQLite database named:
+| Item | Description |
+|---|---|
+| Database file | `database/savings.db` |
+| Database engine | SQLite3, accessed with Python's built-in `sqlite3` module. |
+| Created by | `Database.create_table()` in `database/database.py`, which runs every time the application starts. |
+| Number of tables | 3 |
 
-`database/savings.db`
+**Important Tables**
 
-It contains two main tables:
-
-1. `savings_folders`
-2. `savings_transac`
+| Table | Purpose |
+|---|---|
+| `savings_folders` | Stores each savings folder, its savings goal, and its current balance. |
+| `savings_transac` | Stores every deposit and withdrawal. This is the transaction history shown in the `Savings` tab. |
+| `goal_logs` | Stores every time a folder's goal was set or updated. This is the goal log shown in the `Goals` tab. |
 
 **`savings_folders` Table**
 
-```text
-id
-name
-goal_amount
-current_amount
-create_at
-```
-Purpose:
-- Stores each savings folder.
-- Stores the savings goal.
-- Stores the current balance.
+| Column | Type | Description |
+|---|---|---|
+| `id` | INTEGER, primary key, auto increment | Unique ID of the folder. |
+| `name` | TEXT, not null, unique | Name of the folder. Two folders cannot have the same name. |
+| `goal_amount` | REAL, not null, default 0 | Savings goal of the folder. A value of 0 means no goal has been set. |
+| `current_amount` | REAL, not null, default 0 | Current balance of the folder. |
+| `create_at` | TEXT, not null, default current date and time | When the folder was created. |
 
 **`savings_transac` Table**
 
-```text
-id
-folder_id
-transaction_type
-amount
-note
-create_at
-```
-Purpose:
-- Stores deposits and withdrawals.
-- Connects each transaction to a savings folder through `folder_id`.
+| Column | Type | Description |
+|---|---|---|
+| `id` | INTEGER, primary key, auto increment | Unique ID of the transaction. |
+| `folder_id` | INTEGER, not null, foreign key | The folder that owns the transaction (`savings_folders.id`). |
+| `transaction_type` | TEXT, not null | Either `deposit` or `withdraw` (enforced by a `CHECK` constraint). |
+| `amount` | REAL, not null | Amount of the transaction. It must be greater than 0 (enforced by a `CHECK` constraint). |
+| `note` | TEXT | Optional note. It is not currently used by the GUI. |
+| `create_at` | TEXT, not null, default current date and time | When the transaction was recorded. |
 
-**Relationship**
+**`goal_logs` Table**
 
-The relationship can be represented as:
+| Column | Type | Description |
+|---|---|---|
+| `id` | INTEGER, primary key, auto increment | Unique ID of the log entry. |
+| `folder_id` | INTEGER, not null, foreign key | The folder whose goal was changed (`savings_folders.id`). |
+| `action` | TEXT, not null | Either `set` or `update` (enforced by a `CHECK` constraint). |
+| `old_goal` | REAL, not null, default 0 | The goal before the change. It is 0 when the folder had no goal yet. |
+| `new_goal` | REAL, not null | The goal after the change. It must be greater than 0 (enforced by a `CHECK` constraint). |
+| `create_at` | TEXT, not null, default current date and time | When the goal was changed. |
 
-```text
-savings_folders
-      |
-      | 1
-      |
-      | many
-      v
-savings_transac
-```
-One savings folder can have many savings transactions.
+**Date and Time**
 
-The `folder_id` column in `savings_transac` is a foreign key referencing the `id` column in `savings_folders`.
+| Item | Description |
+|---|---|
+| Stored as | SQLite saves `create_at` in UTC. |
+| Shown as | The history and log tables convert it to the computer's local time with `datetime(create_at, 'localtime')`. |
+
+**Relationships**
+
+| Parent Table | Child Table | Relationship | Foreign Key | On Delete |
+|---|---|---|---|---|
+| `savings_folders` | `savings_transac` | One folder has many transactions. | `savings_transac.folder_id` references `savings_folders.id` | `CASCADE` |
+| `savings_folders` | `goal_logs` | One folder has many goal log entries. | `goal_logs.folder_id` references `savings_folders.id` | `CASCADE` |
+
+`ON DELETE CASCADE` means that deleting a folder also deletes its transactions and goal logs. The application only allows a folder to be deleted when its balance is zero.
 
 **CRUD Operations**
 
-*Create*
-The system can create a new savings folder using:
-```sql
-INSERT INTO savings_folders
-```
-
-Savings transactions are also created using:
-```sql
-INSERT INTO savings_transac
-```
-
-*Read*
-The system reads folders using queries such as:
-```sql
-SELECT id, name, goal_amount, current_amount
-FROM savings_folders
-```
-
-*Update*
-The system updates:
-- Current savings balance after deposits or withdrawals.
-- Savings goals when setting or updating a goal.
-
-Example:
-```sql
-UPDATE savings_folders
-SET goal_amount = ?
-WHERE id = ?
-```
-
-*Delete*
-The system can delete a savings folder:
-```sql
-DELETE FROM savings_folders
-WHERE id = ?
-```
-The application only allows deletion when the folder balance is zero.
-
-*Search / Find*
-The application finds a folder by its name:
-```sql
-SELECT id, current_amount
-FROM savings_folders
-WHERE name = ?
-```
-
+| Operation | Feature | SQL Used | Description |
+|---|---|---|---|
+| Create | Create Folder | `INSERT INTO savings_folders` | Adds a new folder with a balance of P0.00 and no goal. |
+| Create | Add / Subtract Savings | `INSERT INTO savings_transac` | Records each deposit or withdrawal. |
+| Create | Set / Update Goal | `INSERT INTO goal_logs` | Records each goal change in the goal log. |
+| Read | View Folders | `SELECT id, name, goal_amount, current_amount FROM savings_folders` | Reads the folders shown in the `Folders` tab and used for the total savings. |
+| Read | Transaction History | `SELECT ... FROM savings_transac WHERE folder_id = ? ORDER BY id DESC` | Reads the selected folder's transactions, newest first. |
+| Read | Goal Log | `SELECT ... FROM goal_logs WHERE folder_id = ? ORDER BY id DESC` | Reads the selected folder's goal log, newest first. |
+| Update | Add / Subtract Savings | `UPDATE savings_folders SET current_amount = current_amount + ? WHERE id = ?` | Changes the folder's balance after a deposit or withdrawal. |
+| Update | Set / Update Goal | `UPDATE savings_folders SET goal_amount = ? WHERE id = ?` | Changes the folder's goal. |
+| Delete | Delete Folder | `DELETE FROM savings_folders WHERE id = ?` | Deletes a folder. This is only allowed when its balance is zero. |
+| Search / Find | All features | `SELECT id, current_amount FROM savings_folders WHERE name = ?` | Finds a folder by its name before the system acts on it. |
 
 
 ## 11. Screenshots
