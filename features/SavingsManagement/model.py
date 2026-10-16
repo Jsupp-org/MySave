@@ -9,6 +9,7 @@ class SavingsModel:
     amount: float
     note: str | None = None
     id: int | None = None
+    create_at: str | None = None
 
     def __post_init__(self) -> None:
         if self.transaction_type not in TRANSACTION_TYPES:

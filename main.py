@@ -23,7 +23,7 @@ class MainWindow(QMainWindow):
 
         self.folder_view = SavingsFolderView(folder_service)
         self.savings_view = SavingsView(savings_service, folder_service)
-        self.goal_view = GoalView(goal_service, folder_service)
+        self.goal_view = GoalView(goal_service, folder_service, savings_service)
         self.views = [self.folder_view, self.savings_view, self.goal_view]
         
         tabs = QTabWidget()

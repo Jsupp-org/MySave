@@ -44,12 +44,14 @@ The main objectives of MySAVE are:
 - Subtract/withdraw money from a folder.
 - Prevent withdrawals that are greater than the current balance.
 - Validate that the entered amount is a valid positive number.
+- View the transaction history of the selected folder (type, amount, and date), newest first.
 
 **Goal Management**
 - Select a savings folder.
 - Set a savings goal.
 - Update an existing savings goal.
 - Display the current goal of the selected folder.
+- View the transaction history of the selected folder, the same table shown in the `Savings` tab.
 
 
 
@@ -123,13 +125,13 @@ mySAVE/
 | `SavingsFolderManagement/service.py` | Contains the business logic for savings folders. |
 | `SavingsFolderManagement/view.py` | Provides the GUI for creating, viewing, and deleting folders. |
 | `SavingsManagement/model.py` | Defines the savings transaction model. |
-| `SavingsManagement/repository.py` | Handles savings transaction database operations. |
+| `SavingsManagement/repository.py` | Handles savings transaction database operations, including reading the transaction history. |
 | `SavingsManagement/service.py` | Handles deposit and withdrawal logic. |
-| `SavingsManagement/view.py` | Provides the GUI for adding and subtracting savings. |
+| `SavingsManagement/view.py` | Provides the GUI for adding and subtracting savings and showing the transaction history. |
 | `GoalManagement/model.py` | Defines the savings goal model. |
 | `GoalManagement/repository.py` | Handles database operations for goals. |
 | `GoalManagement/service.py` | Handles setting and updating savings goals. |
-| `GoalManagement/view.py` | Provides the GUI for managing goals. |
+| `GoalManagement/view.py` | Provides the GUI for managing goals and showing the transaction history. |
 
 
 
@@ -188,7 +190,7 @@ python main.py
 **B. View a Folder**
 
 1. Go to the `Folders` tab.
-2. Select a folder from the table.
+2. Select a folder from the table. (The `Create Folder`, `View Selected Folder`, and `Delete Selected Folder` buttons are at the top of the tab.)
 3. Click `View Selected Folder`.
 4. The application displays the folder's current balance.
 
@@ -222,6 +224,13 @@ python main.py
 3. Enter the new target amount.
 4. Click `Update Goal`.
 
+**G. View the Transaction History**
+
+1. Open the `Savings` tab or the `Goals` tab.
+2. Select a folder.
+3. The `Transaction History` table below the buttons lists that folder's deposits and withdrawals, newest first.
+4. The table updates automatically after every deposit or withdrawal, and it changes when a different folder is selected.
+
 
 
 ## 9. OOP Implementation
@@ -243,7 +252,7 @@ MySAVE uses Object-Oriented Programming throughout the application.
 - `GoalRepository`
 - `GoalService`
 - `GoalView`
-- `Main`
+- `MainWindow`
 
 **Encapsulation**
 
@@ -281,107 +290,68 @@ The project does not use a large custom inheritance hierarchy requiring explicit
 
 **Database Structure**
 
-The system uses an SQLite database named:
+| Item | Description |
+|---|---|
+| Database file | `database/savings.db` |
+| Database engine | SQLite3, accessed with Python's built-in `sqlite3` module. |
+| Created by | `Database.create_table()` in `database/database.py`, which runs every time the application starts. |
+| Number of tables | 2 |
 
-`database/savings.db`
+**Important Tables**
 
-It contains two main tables:
-
-1. `savings_folders`
-2. `savings_transac`
+| Table | Purpose |
+|---|---|
+| `savings_folders` | Stores each savings folder, its savings goal, and its current balance. |
+| `savings_transac` | Stores every deposit and withdrawal. This is the transaction history shown in the `Savings` and `Goals` tabs. |
 
 **`savings_folders` Table**
 
-```text
-id
-name
-goal_amount
-current_amount
-create_at
-```
-Purpose:
-- Stores each savings folder.
-- Stores the savings goal.
-- Stores the current balance.
+| Column | Type | Description |
+|---|---|---|
+| `id` | INTEGER, primary key, auto increment | Unique ID of the folder. |
+| `name` | TEXT, not null, unique | Name of the folder. Two folders cannot have the same name. |
+| `goal_amount` | REAL, not null, default 0 | Savings goal of the folder. A value of 0 means no goal has been set. |
+| `current_amount` | REAL, not null, default 0 | Current balance of the folder. |
+| `create_at` | TEXT, not null, default current date and time | When the folder was created. |
 
 **`savings_transac` Table**
 
-```text
-id
-folder_id
-transaction_type
-amount
-note
-create_at
-```
-Purpose:
-- Stores deposits and withdrawals.
-- Connects each transaction to a savings folder through `folder_id`.
+| Column | Type | Description |
+|---|---|---|
+| `id` | INTEGER, primary key, auto increment | Unique ID of the transaction. |
+| `folder_id` | INTEGER, not null, foreign key | The folder that owns the transaction (`savings_folders.id`). |
+| `transaction_type` | TEXT, not null | Either `deposit` or `withdraw` (enforced by a `CHECK` constraint). |
+| `amount` | REAL, not null | Amount of the transaction. It must be greater than 0 (enforced by a `CHECK` constraint). |
+| `note` | TEXT | Optional note. It is not currently used by the GUI. |
+| `create_at` | TEXT, not null, default current date and time | When the transaction was recorded. |
+
+**Date and Time**
+
+| Item | Description |
+|---|---|
+| Stored as | SQLite saves `create_at` in UTC. |
+| Shown as | The transaction history tables convert it to the computer's local time with `datetime(create_at, 'localtime')`. |
 
 **Relationship**
 
-The relationship can be represented as:
+| Parent Table | Child Table | Relationship | Foreign Key | On Delete |
+|---|---|---|---|---|
+| `savings_folders` | `savings_transac` | One folder has many transactions. | `savings_transac.folder_id` references `savings_folders.id` | `CASCADE` |
 
-```text
-savings_folders
-      |
-      | 1
-      |
-      | many
-      v
-savings_transac
-```
-One savings folder can have many savings transactions.
-
-The `folder_id` column in `savings_transac` is a foreign key referencing the `id` column in `savings_folders`.
+`ON DELETE CASCADE` means that deleting a folder also deletes its transactions. The application only allows a folder to be deleted when its balance is zero.
 
 **CRUD Operations**
 
-*Create*
-The system can create a new savings folder using:
-```sql
-INSERT INTO savings_folders
-```
-
-Savings transactions are also created using:
-```sql
-INSERT INTO savings_transac
-```
-
-*Read*
-The system reads folders using queries such as:
-```sql
-SELECT id, name, goal_amount, current_amount
-FROM savings_folders
-```
-
-*Update*
-The system updates:
-- Current savings balance after deposits or withdrawals.
-- Savings goals when setting or updating a goal.
-
-Example:
-```sql
-UPDATE savings_folders
-SET goal_amount = ?
-WHERE id = ?
-```
-
-*Delete*
-The system can delete a savings folder:
-```sql
-DELETE FROM savings_folders
-WHERE id = ?
-```
-The application only allows deletion when the folder balance is zero.
-
-*Search / Find*
-The application finds a folder by its name:
-```sql
-SELECT id, current_amount
-FROM savings_folders
-WHERE name = ?
-```
+| Operation | Feature | SQL Used | Description |
+|---|---|---|---|
+| Create | Create Folder | `INSERT INTO savings_folders` | Adds a new folder with a balance of P0.00 and no goal. |
+| Create | Add / Subtract Savings | `INSERT INTO savings_transac` | Records each deposit or withdrawal. |
+| Read | View Folders | `SELECT id, name, goal_amount, current_amount FROM savings_folders` | Reads the folders shown in the `Folders` tab and used for the total savings. |
+| Read | Transaction History | `SELECT ... FROM savings_transac WHERE folder_id = ? ORDER BY id DESC` | Reads the selected folder's transactions, newest first, for the `Savings` and `Goals` tabs. |
+| Update | Add / Subtract Savings | `UPDATE savings_folders SET current_amount = current_amount + ? WHERE id = ?` | Changes the folder's balance after a deposit or withdrawal. |
+| Update | Set / Update Goal | `UPDATE savings_folders SET goal_amount = ? WHERE id = ?` | Changes the folder's goal. |
+| Delete | Delete Folder | `DELETE FROM savings_folders WHERE id = ?` | Deletes a folder. This is only allowed when its balance is zero. |
+| Search / Find | All features | `SELECT id, current_amount FROM savings_folders WHERE name = ?` | Finds a folder by its name before the system acts on it. |
 
 
 
@@ -390,19 +360,19 @@ WHERE name = ?
 **Screenshots**
 
 *Folders Tab*
-    Shows the list of savings folders, balances, goals, and total savings.
+    Shows the folder buttons at the top, followed by the list of savings folders, balances, goals, and total savings.
 
 ![Folders Tab](screenshots/folders.png)
 
 
 *Savings Tab*   
-    Shows the controls for adding and subtracting savings.
+    Shows the controls for adding and subtracting savings, and the transaction history of the selected folder.
 
 ![Savings Tab](screenshots/savings.png)
 
 
 *Goals Tab*
-    Shows the controls for setting and updating savings goals.
+    Shows the controls for setting and updating savings goals, and the transaction history of the selected folder.
 
 ![Goals Tab](screenshots/goals.png)
 
@@ -411,7 +381,7 @@ WHERE name = ?
 ## 12. Testing
 
 The system was tested using different inputs to check its major features and validation rules.
-----------------------------------------------------------------------------------------------------------------------------------------------
+
 |                Test             |               Input / Action              |                       Expected Result                        |
 |---------------------------------|-------------------------------------------|--------------------------------------------------------------|
 | Create folder                   |   Create `Emergency`                      |    Folder is created and displayed.                          |
@@ -427,7 +397,11 @@ The system was tested using different inputs to check its major features and val
 | Delete folder with zero balance |   Delete a folder with `P0.00`            |    Folder is deleted.                                        |
 | Delete folder with balance      |   Delete a folder containing savings      |    System prevents deletion.                                 |
 | Total savings                   |   Create/update several folders           |    Total savings is recalculated and displayed.              |
-----------------------------------------------------------------------------------------------------------------------------------------------
+| View transaction history        |   Select a folder in the `Savings` tab    |    The folder's deposits and withdrawals are listed, newest first, with type, amount, and date. |
+| Transaction history in `Goals` tab |   Select a folder in the `Goals` tab   |    The same transaction history as the `Savings` tab is shown. |
+| Switch folders                  |   Select a different folder               |    The transaction history changes to the selected folder's transactions. |
+| History updates after saving    |   Add or subtract savings                 |    The new transaction appears at the top of the history in both tabs. |
+
 **Example Database Test**
 
 A sample database state can contain folders such as:
@@ -446,7 +420,7 @@ Each folder stores its own goal and current balance, while deposits and withdraw
 - The application is currently designed as a local desktop application.
 - It does not have user accounts or login functionality.
 - There is no online/cloud synchronization.
-- Savings transactions are stored in the database, but there is currently no GUI screen for viewing a complete transaction history.
+- The transaction history shows one folder at a time. There is no combined view of all folders and no date filter.
 - The transaction `note` field exists in the database but is not currently exposed through the GUI.
 - The application does not provide charts or graphs for savings progress.
 - The application does not automatically calculate a recommended amount to save per day or month.

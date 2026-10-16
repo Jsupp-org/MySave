@@ -30,3 +30,7 @@ class SavingsService:
             )
         transaction.id = self.repository.record(folder_id, "withdraw", amount)
         return transaction
+
+    def get_history(self, folder_name: str) -> list[SavingsModel]:
+        folder_id, _ = self.find_folder(folder_name)
+        return self.repository.get_history(folder_id)

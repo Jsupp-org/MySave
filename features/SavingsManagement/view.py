@@ -36,7 +36,15 @@ class SavingsView(QWidget):
         button_row.addWidget(subtract_button)
         layout.addLayout(button_row)
 
-        layout.addStretch()
+        layout.addWidget(QLabel("Transaction History:"))
+        self.history_table = QTableWidget(0, 3)
+        self.history_table.setHorizontalHeaderLabels(["Type", "Amount", "Date"])
+        self.history_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.history_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        layout.addWidget(self.history_table)
+
+        # show the history of whichever folder is selected in the dropdown
+        self.folder_combo.currentTextChanged.connect(self.load_history)
 
     def add(self) -> None:
         try:
@@ -70,11 +78,29 @@ class SavingsView(QWidget):
 
     def refresh(self) -> None:
         selected = self.folder_combo.currentText()
+        self.folder_combo.blockSignals(True)
         self.folder_combo.clear()
         self.folder_combo.addItems([f.name for f in self.folder_service.view_all()])
         index = self.folder_combo.findText(selected)
         if index >= 0:
             self.folder_combo.setCurrentIndex(index)
+        self.folder_combo.blockSignals(False)
+        self.load_history(self.folder_combo.currentText())
+
+    def load_history(self, folder_name: str) -> None:
+        history = []
+        if folder_name:
+            try:
+                history = self.service.get_history(folder_name)
+            except ValueError:
+                history = []
+
+        self.history_table.setRowCount(len(history))
+        for row, item in enumerate(history):
+            sign = "+" if item.transaction_type == "deposit" else "-"
+            self.history_table.setItem(row, 0, QTableWidgetItem(item.transaction_type.capitalize()))
+            self.history_table.setItem(row, 1, QTableWidgetItem(f"{sign}P{item.amount:,.2f}"))
+            self.history_table.setItem(row, 2, QTableWidgetItem(item.create_at or ""))
 
     def warn(self, message: str) -> None:
         QMessageBox.warning(self, "Error", message)

@@ -15,16 +15,6 @@ class SavingsFolderView(QWidget):
     def build_ui(self) -> None:
         layout = QVBoxLayout(self)
 
-        self.table = QTableWidget(0, 3)
-        self.table.setHorizontalHeaderLabels(["Folder", "Balance", "Goal"])
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        layout.addWidget(self.table)
-
-        self.total_Label = QLabel()
-        layout.addWidget(self.total_Label)
-
         create_row = QHBoxLayout()
         self.name_input = QLineEdit()
         self.name_input.setPlaceholderText("New folder name")
@@ -34,17 +24,25 @@ class SavingsFolderView(QWidget):
         create_row.addWidget(create_button)
         layout.addLayout(create_row)
 
-
         action_row = QHBoxLayout()
         view_button = QPushButton("View Selected Folder")
         view_button.clicked.connect(self.on_view)
         action_row.addWidget(view_button)
-        
+
         delete_button = QPushButton("Delete Selected Folder")
         delete_button.clicked.connect(self.on_delete)
         action_row.addWidget(delete_button)
-        layout.addLayout(action_row)    
- 
+        layout.addLayout(action_row)
+
+        self.table = QTableWidget(0, 3)
+        self.table.setHorizontalHeaderLabels(["Folder", "Balance", "Goal"])
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        layout.addWidget(self.table)
+
+        self.total_Label = QLabel()
+        layout.addWidget(self.total_Label)
 
     def on_create(self) -> None:
         try:
