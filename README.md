@@ -10,7 +10,7 @@
 MySAVE is a personal savings tracking system developed as a desktop GUI application. It allows users to encode and specifically separate their savings into different folders such as Emergency, Investment, or other personal goal. The system keeps track of the current balance and goal amount for each folder. It also records savings transactions in an SQLite database.
 
 **Problem or Need Addressed** 
-Managing savings manually like writing or putting it into the 'note' application on phones can make it difficult to keep track of different financial goals and current balances. MySAVE provides a simple way to organize savings and monitor progress in one application. This helps people to track their saving funds and keeps them motivated when seeing their progress over time.
+Managing savings manually like writing or putting it into the 'note' application on phones can make it difficult to keep track of different financial goals and current balances. Another problem with the traditional way of noting your savings on a sheet of paper is that papers are very vulnerable (very easy to tear apart or to be crumpled / can be thrown anytime without being noticed). Additionally, this project is already a feature of a e-wallet app, however, the problem about this is e-wallet is accessible anytime and anywhere (if you have an internet), which put your savings into danger if for instance, you need money on that time. MySAVE provides a simple way to organize savings and monitor progress in one application. This helps people to track their saving funds and keeps them motivated when seeing their progress over time.
 
 
 
@@ -295,7 +295,7 @@ The project does not use a large custom inheritance hierarchy requiring explicit
 | Database file | `database/savings.db` |
 | Database engine | SQLite3, accessed with Python's built-in `sqlite3` module. |
 | Created by | `Database.create_table()` in `database/database.py`, which runs every time the application starts. |
-| Number of tables | 2 |
+| Number of tables | 3 |
 
 **Important Tables**
 
@@ -332,7 +332,7 @@ The project does not use a large custom inheritance hierarchy requiring explicit
 | Stored as | SQLite saves `create_at` in UTC. |
 | Shown as | The transaction history tables convert it to the computer's local time with `datetime(create_at, 'localtime')`. |
 
-**Relationship**
+**`goal_logs` Table**
 
 | Parent Table | Child Table | Relationship | Foreign Key | On Delete |
 |---|---|---|---|---|
@@ -352,7 +352,6 @@ The project does not use a large custom inheritance hierarchy requiring explicit
 | Update | Set / Update Goal | `UPDATE savings_folders SET goal_amount = ? WHERE id = ?` | Changes the folder's goal. |
 | Delete | Delete Folder | `DELETE FROM savings_folders WHERE id = ?` | Deletes a folder. This is only allowed when its balance is zero. |
 | Search / Find | All features | `SELECT id, current_amount FROM savings_folders WHERE name = ?` | Finds a folder by its name before the system acts on it. |
-
 
 
 ## 11. Screenshots
